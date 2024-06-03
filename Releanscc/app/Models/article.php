@@ -13,6 +13,8 @@ class article extends Model
         'blog_id',
         'header',
         'paragraph',
+        'header_two',
+        'paragraph_two',
         'image1',
         'image2',
     ];

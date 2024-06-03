@@ -16,6 +16,6 @@ class blog extends Model
 
     public function articles()
     {
-        return $this->hasMany(Article::class ,'blog_id','id');
+        return $this->hasOne(Article::class, 'blog_id', 'id');
     }
 }

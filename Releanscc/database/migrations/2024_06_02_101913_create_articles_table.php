@@ -17,6 +17,8 @@ return new class extends Migration
             $table->foreign('blog_id')->references('id')->on('blogs')->onDelete('cascade')->onUpdate('cascade');
             $table->string('header')->nullable();
             $table->text('paragraph')->nullable();
+            $table->string('header_two')->nullable();
+            $table->text('paragraph_two')->nullable();
             $table->string('image1')->nullable();
             $table->string('image2')->nullable();
             $table->timestamps();

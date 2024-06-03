@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\article;
+use App\Models\blog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -45,9 +46,19 @@ class ArticleController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'blog_id' => 'required|exists:blogs,id',
+            'blog_id' => [
+                'required',
+                'exists:blogs,id',
+                function ($attribute, $value, $fail) {
+                    if (Article::where('blog_id', $value)->count() >= 1) {
+                        $fail('You can only add up to one articles for the same blog');
+                    }
+                },
+            ],
             'header' => 'required|string|max:255',
             'paragraph' => 'required|string',
+            'header_two' => 'nullable|string|max:255',
+            'paragraph_two' => 'nullable|string',
             'image1' => 'nullable|image|max:25000',
             'image2' => 'nullable|image|max:25000'
         ]);
@@ -63,6 +74,8 @@ class ArticleController extends Controller
             'blog_id' => $request->blog_id,
             'header' => $request->header,
             'paragraph' => $request->paragraph,
+            'header_two' => $request->header_two,
+            'paragraph_two' => $request->paragraph_two,
             'image1' => $request->image1 ? $this->uploadImage($request->image1) : null,
             'image2' => $request->image2 ? $this->uploadImage($request->image2) : null,
         ]);
@@ -85,10 +98,43 @@ class ArticleController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(article $article)
+    public function show($id)
     {
-        //
+        $blog = Blog::find($id);
+        $articles = Article::where('blog_id', $id)->get();
+
+        if (is_null($blog)) {
+            return response()->json([
+                'status' => 404,
+                'message' => 'No blog found with this ID.',
+            ], 404);
+        }
+
+
+        $filteredArticles = $articles->map(function ($article) {
+            return [
+                'id' => $article->id,
+                'header' => $article->header,
+                'paragraph' => $article->paragraph,
+                'header_two' => $article->header_two,
+                'paragraph_two' => $article->paragraph_two,
+                'image1' => $article->image1,
+                'image2' => $article->image2,
+            ];
+        });
+
+        $data = [
+            'status' => 200,
+            'blog' => $blog,
+            'articles' => $filteredArticles,
+        ];
+
+        return response()->json($data, 200);
     }
+
+
+
+
 
     /**
      * Show the form for editing the specified resource.
@@ -107,6 +153,8 @@ class ArticleController extends Controller
             'blog_id' => 'exists:blogs,id',
             'header' => 'string|max:255',
             'paragraph' => 'string',
+            'header_two' => 'string|max:255',
+            'paragraph_two' => 'string',
             'image1' => 'nullable|image|max:25000',
             'image2' => 'nullable|image|max:25000'
         ]);
@@ -136,6 +184,12 @@ class ArticleController extends Controller
         if ($request->has('paragraph')) {
             $article->paragraph = $request->paragraph;
         }
+        if ($request->has('header_two')) {
+            $article->header = $request->header;
+        }
+        if ($request->has('paragraph_two')) {
+            $article->paragraph = $request->paragraph;
+        }
         if ($request->hasFile('image1')) {
             $article->image1 = $this->uploadImage($request->file('image1'));
         }
@@ -156,8 +210,14 @@ class ArticleController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(article $article)
+    public function destroy($id)
     {
-        //
+        $article = article::find($id);
+        if (!$article) {
+            return response()->json(['message' => 'article not found'], 404);
+        }
+        $article->delete();
+
+        return response()->json(['message' => 'article deleted successfully'], 200);
     }
 }
